@@ -1,0 +1,13 @@
+{
+"resources":
+	[
+		{"name":"preBg","type":"image","url":"assets/bg.jpg"},
+		{"name":"gameBg","type":"image","url":"assets/bg2.jpg"},
+        {"name":"description","type":"json","url":"config/description.json"}
+	],
+
+"groups":
+	[
+        {"name":"preload","keys":"preBg,gameBg"}
+	]
+}

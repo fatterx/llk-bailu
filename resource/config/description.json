@@ -1,0 +1,10 @@
+[
+       {"text" : "学渣", "textColor":"0xaaaaaa"},
+        {"text" : "学霸", "textColor":"0x888888"},
+        {"text" : "学神", "textColor":"0xF1C40F"},
+        {"text" : "学屌", "textColor":"0xFFEC8B"},
+        {"text" : "女神", "textColor":"0xFFC0CB"},
+		{"text" : "屌丝", "textColor":"0x363636"},
+		{"text" : "老师", "textColor":"0xB22222"}
+
+]
