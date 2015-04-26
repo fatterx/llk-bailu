@@ -63,7 +63,6 @@ class MapItem extends egret.Sprite {
 		this.txtContent.text = content.text;
 		this.txtContent.textColor = parseInt(content.textColor);
 	}
-	
 }
 
 

@@ -140,17 +140,17 @@ class Main extends egret.DisplayObjectContainer {
 			this.mMapArray.push([]);
 			for(var j=0; j<this.mMapCols;){
 				if(j === 0 || j === this.mMapCols-1 || i === 0 || i === this.mMapRows-1){
-					var obj = {type:-1, item:{}};
+					var obj = {type:-1, item:{}, isVisited: false, parent: null, crossNum:198964};
 					this.mMapArray[i].push(obj);
 					++j;
 				} else {
-					var obj1 = {type:0, item:{}};
+					var obj1 = {type:0, item:{}, isVisited: false, parent: null, crossNum:198964};
 					obj1.type = k;
 					
 					this.mMapArray[i].push(obj1);
 					++j;
 					
-					var obj2 = {type:0, item:{}};
+					var obj2 = {type:0, item:{}, isVisited: false, parent: null, crossNum:198964};
 					obj2.type = k;
 					this.mMapArray[i].push(obj2);
 					++k;
@@ -260,10 +260,20 @@ class Main extends egret.DisplayObjectContainer {
 			this.mLastX = 0;
 			this.mLastY = 0;
 			return;
-		} 
+		}
 		
-		if(this.canClean(xy.x, xy.y, this.mLastX, this.mLastY)){
 
+		if(this.canClean(xy.x, xy.y, this.mLastX, this.mLastY)){
+			this.addPoint(this.mPoints, [this.mLastX,this.mLastY]);
+			
+			var parent = this.mMapArray[this.mLastY][this.mLastX]['parent'];
+
+			while(this.mMapArray[parent[1]][parent[0]]['parent']){
+				this.addPoint(this.mPoints, parent);
+				parent = this.mMapArray[parent[1]][parent[0]]['parent'];
+			}
+			
+			this.addPoint(this.mPoints, [xy.x, xy.y]);
 			this.drawLine();
 			
 			var _this = this;
@@ -307,12 +317,35 @@ class Main extends egret.DisplayObjectContainer {
 	
 	private mPoints = [];
 	
-	private addPoint(point) : void {
-		this.mPoints.push(point);
+	private addPoint(points, point) : void {
+		if(!this.hasPoint(point, points)){
+			points.push(point);
+		}
 	}
 	
-	private cleanPoint() : void {
-		this.mPoints = [];
+	private hasPoint(point, points) : boolean {
+		if(!point){
+			return false;
+		}
+		
+		points = points || [];
+		
+		for(var i = 0, length = points.length; i < length; i++){
+			if(points[i][0] === point[0] && points[i][1] === point[1]){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * 将数组A中数据copy置数组B中
+	 **/
+	private concatArray(arrayA, arrayB) : void {
+		for(var i = 0,length = arrayA.length; i<length; i++){
+			arrayB.push(arrayA[i]);
+		}
 	}
 	
 	private mLine :egret.Shape; 
@@ -346,221 +379,164 @@ class Main extends egret.DisplayObjectContainer {
 		if(this.mLine){
 			this.removeChild(this.mLine);
 		}
-		this.cleanPoint();
+		
+		this.mPoints = [];
 	}
 	
 	private canClean(x1, y1, x2, y2) : boolean {
+		// 同一点，返回
 		if(x1 === x2 && y1 === y2){
 			return false;
 		}
-
-		if(this.mMapArray[y1][x1].type != this.mMapArray[y2][x2].type){
+		
+		var typeA = this.mMapArray[y1][x1].type,
+			typeB = this.mMapArray[y2][x2].type;
+		
+		// 已消除，返回
+		if(typeA < 0 || typeB < 0){	//不处理已消除的图片
 			return false;
 		}
 
-		if(this.mMapArray[y1][x1].type < 0 || this.mMapArray[y2][x2].type < 0){	//不处理已消除的图片
+		// 类型不同，返回
+		if(typeA != typeB){
 			return false;
 		}
 	
-		if(x1 === x2){		//同列
-			if(1 === y1-y2 || 1 === y2-y1){	//相邻
-				this.addPoint([x1,y1]);
-				this.addPoint([x2,y2])
-				return true;
-			} else if(this.isColEmpty(x1,y1,x2,y2)){	//直线
-				this.addPoint([x1,y1]);
-				this.addPoint([x2,y2]);
-				return true;
-			} else {	//两个拐点	(优化)
-				var i = 1;
-				while((x1+i < this.mMapCols) && this.mMapArray[y1][x1+i].type < 0){
-							if(this.mMapArray[y2][x2+i].type >= 0){
-								break;
-							} else {
-								if(this.isColEmpty(x1+i,y1,x1+i,y2)){
-									this.addPoint([x1,y1]);
-									this.addPoint([x1+i,y1]);
-									this.addPoint([x1+i,y2]);
-									this.addPoint([x2,y2]);
-									return true;
-								}
-								i++;
-							}
-						}
-						i = 1;
-						while((x1-i >= 0) && this.mMapArray[y1][x1-i].type < 0){
-							if(this.mMapArray[y2][x2-i].type >= 0){
-								break;
-							} else {
-								if(this.isColEmpty(x1-i,y1,x1-i,y2)){
-									this.addPoint([x1,y1]);
-									this.addPoint([x1-i,y1]);
-									this.addPoint([x1-i,y2]);
-									this.addPoint([x2,y2]);
-									return true;
-								}
-								i++;
-							}
-						}
+		this.resetMapArray();
+		
+		var queue = [];
+		
+		queue.push([x1,y1]);
+		
+		this.mMapArray[y1][x1]['isVisited'] = true;
+		this.mMapArray[y1][x1]['crossNum'] = -1;
+		
+		while(queue.length > 0){
+			var curPoint = queue.shift();
+			
+			var orgX = curPoint[0], 
+				orgY = curPoint[1];			
+			
+			var x, y, curType;
+			
+			//向上
+			x = orgX;
+			y = orgY - 1;
 
-					}
-				}
-
-				if(y1 === y2){		//同行
-					if(1 === x1-x2 || 1 === x2-x1){
-						this.addPoint([x1,y1]);
-						this.addPoint([x2,y2]);
-						return true;
-					} else if(this.isRowEmpty(x1,y1,x2,y2)){
-						this.addPoint([x1,y1]);
-						this.addPoint([x2,y2]);
+			for(;y >= 0; y--){
+				if(!this.mMapArray[y][x]['isVisited']){	
+					this.mMapArray[y][x]['parent'] = [orgX,orgY];
+					this.mMapArray[y][x]['isVisited'] = true;
+					this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+					
+					curType = this.mMapArray[y][x]['type'];		
+				
+					//空白，可继续查找
+					if(curType < 0){
+						if(this.mMapArray[y][x]['crossNum'] < 2){
+							queue.push([x,y]);
+						}
+					} else if(curType === typeA && x == x2 && y == y2){
 						return true;
 					} else {
-						var i = 1;
-						while((y1+i < this.mMapRows) && this.mMapArray[y1+i][x1].type < 0){
-							if(this.mMapArray[y2+i][x2].type >= 0){
-								break;
-							} else {
-								if(this.isRowEmpty(x1,y1+i,x2,y1+i)){
-									this.addPoint([x1,y1]);
-									this.addPoint([x1,y1+i]);
-									this.addPoint([x2,y1+i]);
-									this.addPoint([x2,y2]);
-									return true;
-								}
-								i++;
-							}
-						}
-						i = 1;
-						while((y1-i >= 0) && this.mMapArray[y1-i][x1].type < 0){
-							if(this.mMapArray[y2-i][x2].type >= 0){
-								break;
-							} else {
-								if(this.isRowEmpty(x1,y1-i,x2,y1-i)){
-									this.addPoint([x1,y1]);
-									this.addPoint([x1,y1-i]);
-									this.addPoint([x2,y1-i]);
-									this.addPoint([x2,y2]);
-									return true;
-								}
-								i++;
-							}
-						}
+						break;
 					}
+				} else {
+					break;
 				}
-				
-				//一个拐点
-				if(this.isRowEmpty(x1,y1,x2,y1) && this.mMapArray[y1][x2].type < 0){	// (x1,y1) -> (x2,y1)
-					if(this.isColEmpty(x2,y1,x2,y2)){	// (x1,y2) -> (x2,y2)
-						this.addPoint([x1,y1]);
-						this.addPoint([x2,y1]);
-						this.addPoint([x2,y2]);
-						return true;
-					}
-				}
-				if(this.isColEmpty(x1,y1,x1,y2) && this.mMapArray[y2][x1].type < 0){
-					if(this.isRowEmpty(x1,y2,x2,y2)){
-						this.addPoint([x1,y1]);
-						this.addPoint([x1,y2]);
-						this.addPoint([x2,y2]);
-						return true;
-					}
-				}
-
-				//不在一行的两个拐点
-				if( x1 != x2 && y1 != y2) {
-					i = x1;
-					while(++i < this.mMapCols ){
-						if(this.mMapArray[y1][i].type >= 0){
-							break;
-						} else {
-							if(this.isColEmpty(i,y1,i,y2) && this.isRowEmpty(i,y2,x2,y2) && this.mMapArray[y2][i].type < 0){
-								this.addPoint([x1,y1]);
-								this.addPoint([i,y1]);
-								this.addPoint([i,y2]);
-								this.addPoint([x2,y2]);
-								return true;
-							}
-						}
-					}
-					
-					i = x1;
-					while(--i >= 0 ){
-						if(this.mMapArray[y1][i].type >= 0){
-							break;
-						} else {
-							if(this.isColEmpty(i,y1,i,y2) && this.isRowEmpty(i,y2,x2,y2) && this.mMapArray[y2][i].type < 0){
-								this.addPoint([x1,y1]);
-								this.addPoint([i,y1]);
-								this.addPoint([i,y2]);
-								this.addPoint([x2,y2]);
-								return true;
-							}
-						}
-					}
-
-					i = y1;
-					while(++i < this.mMapRows){
-						if(this.mMapArray[i][x1] >= 0){
-							break;
-						} else {
-							if(this.isRowEmpty(x1,i,x2,i) && this.isColEmpty(x2,i,x2,y2) && this.mMapArray[i][x2].type < 0){
-								this.addPoint([x1,y1]);
-								this.addPoint([x1,i]);
-								this.addPoint([x2,i]);
-								this.addPoint([x2,y2]);
-								return true;
-							}
-						}
-					}
-					
-					i = y1;
-					while(--i >= 0){
-						if(this.mMapArray[i][x1] >= 0){
-							break;
-						} else {
-							if(this.isRowEmpty(x1,i,x2,i) && this.isColEmpty(x2,i,x2,y2) && this.mMapArray[i][x2].type < 0){
-								this.addPoint([x1,y1]);
-								this.addPoint([x1,i]);
-								this.addPoint([x2,i]);
-								this.addPoint([x2,y2]);
-								return true;
-							}
-						}
-					}
-				}
-
-				return false;
-	}
-	
-	private	isRowEmpty(x1,y1,x2,y2) : boolean {	
-		if(y1 != y2){
-			return false;
-		}
-				
-		x1>x2 && (x1=x1+x2, x2=x1-x2, x1=x1-x2);	//强制x1比x2小
+			}
 			
-		for(var j=x1+1; j<x2; ++j){		//from (x2,y2+1) to (x2,y1-1);
-			if(this.mMapArray[y1][j].type >= 0){
-				return false;
-			} 
-		}
-		return true;
-	}
+			//向下
+			x = orgX;
+			y = orgY + 1;
 			
-	private	isColEmpty(x1,y1,x2,y2) : boolean {
-		if(x1 != x2){
-			return false;
-		}
-				
-		y1>y2 && (y1=y1+y2, y2=y1-y2, y1=y1-y2);	//强制y1比y2小
-				
-		for(var i=y1+1; i<y2; ++i){		//from (x2+1,y2) to (x1-1,y2);
-			if(this.mMapArray[i][x1].type >= 0){
-				return false;
+			for(;y < this.mMapRows; y++){
+				if(!this.mMapArray[y][x]['isVisited']){
+					this.mMapArray[y][x]['parent'] = [orgX,orgY];
+					this.mMapArray[y][x]['isVisited'] = true;
+					this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+					
+					curType = this.mMapArray[y][x]['type'];
+					
+					//空白，可继续查找
+					if(curType < 0){
+						if(this.mMapArray[y][x]['crossNum'] < 2){
+							queue.push([x,y]);
+						}
+					} else if(curType === typeA && x == x2 && y == y2){
+						return true;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
+			}
+			
+			//向左
+			x = orgX - 1;
+			y = orgY;
+			
+			for(;x >= 0; x--){
+				if(!this.mMapArray[y][x]['isVisited']){
+					this.mMapArray[y][x]['parent'] = [orgX,orgY];
+					this.mMapArray[y][x]['isVisited'] = true;
+					this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+					
+					curType = this.mMapArray[y][x]['type'];
+					//空白，可继续查找
+					if(curType < 0){
+						if(this.mMapArray[y][x]['crossNum'] < 2){
+							queue.push([x,y]);	
+						}
+					} else if(curType === typeA && x == x2 && y == y2){			
+						return true;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
+			}
+			
+			//向右
+			x = orgX + 1;
+			y = orgY;
+			
+			for(;x < this.mMapCols; x++){
+				if(!this.mMapArray[y][x]['isVisited']){
+					this.mMapArray[y][x]['parent'] = [orgX,orgY];
+					this.mMapArray[y][x]['isVisited'] = true;
+					this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+
+					curType = this.mMapArray[y][x]['type'];
+					//空白，可继续查找
+					if(curType < 0){
+						if(this.mMapArray[y][x]['crossNum'] < 2){
+							queue.push([x,y]);
+						}
+					} else if(curType === typeA && x == x2 && y == y2){
+						return true;
+					} else {
+						break;
+					}
+				} else {
+					break;
+				}
 			}
 		}
-		return true;
+
+		return false;
+	}
+	
+	private resetMapArray() : void{
+		for(var i = 0; i < this.mMapRows; i++){
+			for(var j = 0; j < this.mMapCols; j++){
+				this.mMapArray[i][j]['isVisited'] = false;
+				this.mMapArray[i][j]['crossNum'] = 198964;
+				this.mMapArray[i][j]['parent'] = null;
+			}
+		}
 	}
 	
     /**
