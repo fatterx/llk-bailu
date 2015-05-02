@@ -8,7 +8,7 @@ var MapItem = (function (_super) {
         this.mBorderColorSelected = 0xff0000;
         this.mBorderWidth = 1;
         this.mBackgrourdColor = 0xF8F8FF;
-        this.mTextSize = 16;
+        this.mTextSize = 18;
         this.mType = 0;
         this.createView();
     }
@@ -32,6 +32,7 @@ var MapItem = (function (_super) {
         this.txtContent.height = this.mHeight + this.mBorderWidth * 2;
         this.txtContent.size = this.mTextSize;
         this.txtContent.fontFamily = "微软雅黑";
+        this.txtContent.bold = true;
         this.txtContent.textAlign = egret.HorizontalAlign.CENTER;
         this.txtContent.verticalAlign = egret.VerticalAlign.MIDDLE;
     };

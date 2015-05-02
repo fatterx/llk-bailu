@@ -33,6 +33,11 @@ var Main = (function (_super) {
         this.mItemCount = 6;
         this.mItemWidth = 60;
         this.mItemHeight = 60;
+        this.mGameDifficulty = 1;
+        this.mTxtProgress = new egret.TextField();
+        this.DEFAULT_PROGRESS = 120;
+        this.mLevel = 1;
+        this.mTxtLevel = new egret.TextField();
         this.mPoints = [];
         this.addEventListener(egret.Event.ADDED_TO_STAGE, this.onAddToStage, this);
     }
@@ -72,9 +77,9 @@ var Main = (function (_super) {
         }
     };
     /**
-    * 资源组加载出错
+     * 资源组加载出错
      *  The resource group loading failed
-    */
+     */
     __egretProto__.onResourceLoadError = function (event) {
         //TODO
         console.warn("Group:" + event.groupName + " has failed to load");
@@ -88,8 +93,70 @@ var Main = (function (_super) {
      */
     __egretProto__.onResourceProgress = function (event) {
         if (event.groupName == "preload") {
-            this.loadingView.setProgress(event.itemsLoaded, event.itemsTotal);
         }
+    };
+    __egretProto__.initProgress = function () {
+        this.mTxtProgress.width = 150;
+        this.mTxtProgress.height = 20;
+        this.mTxtProgress.x = 360;
+        this.mTxtProgress.y = 600;
+        this.mTxtProgress.textColor = 0xffffff;
+        this.mTxtProgress.size = 18;
+        this.mTxtProgress.text = "计时开始";
+        this.mTxtProgress.fontFamily = "微软雅黑";
+        this.mTxtProgress.bold = true;
+        this.addChild(this.mTxtProgress);
+        this.resumeProgress();
+    };
+    __egretProto__.resumeProgress = function () {
+        this.mProgress = this.mGameDifficulty == 1 ? this.DEFAULT_PROGRESS : this.DEFAULT_PROGRESS - 5 * this.mLevel;
+    };
+    __egretProto__.initLevel = function () {
+        this.mTxtLevel.width = 150;
+        this.mTxtLevel.height = 20;
+        this.mTxtLevel.x = 360;
+        this.mTxtLevel.y = 580;
+        this.mTxtLevel.textColor = 0xffffff;
+        this.mTxtLevel.size = 18;
+        this.mTxtLevel.text = "level:1";
+        this.mTxtLevel.fontFamily = "微软雅黑";
+        this.mTxtLevel.bold = true;
+        this.addChild(this.mTxtLevel);
+        this.resumeLevel();
+    };
+    __egretProto__.resumeLevel = function () {
+        this.mItemCount = parseInt(this.getCookie("itemCount"));
+        console.log("resumeLevel, itemCount:" + this.mItemCount);
+        this.mItemCount = isNaN(this.mItemCount) ? this.mMaxItemCount - 3 : this.mItemCount;
+        console.log("resumeLevel, itemCount2:" + this.mItemCount);
+        this.mLevel = parseInt(this.getCookie("level"));
+        this.mTxtLevel.text = "level:" + (isNaN(this.mLevel) ? 1 : this.mLevel);
+        this.mGameDifficulty = parseInt(this.getCookie("difficulty"));
+        this.mGameDifficulty = isNaN(this.mGameDifficulty) ? 1 : this.mGameDifficulty;
+    };
+    __egretProto__.initTimer = function () {
+        //创建一个计时器对象
+        this.mTimer = new egret.Timer(1000, this.mProgress);
+        //注册事件侦听器
+        this.mTimer.addEventListener(egret.TimerEvent.TIMER, this.onTimerStart, this);
+        this.mTimer.addEventListener(egret.TimerEvent.TIMER_COMPLETE, this.onTimerEnd, this);
+        //开始计时
+        this.startTimer();
+    };
+    __egretProto__.onTimerStart = function () {
+        this.mTxtProgress.text = "time:" + --this.mProgress + "s";
+    };
+    __egretProto__.onTimerEnd = function () {
+        this.doDie();
+    };
+    __egretProto__.startTimer = function () {
+        this.mTimer.start();
+    };
+    __egretProto__.resetTimer = function () {
+        this.mTimer.reset();
+    };
+    __egretProto__.stopTimer = function () {
+        this.mTimer.stop();
     };
     /**
      * 创建游戏场景
@@ -107,40 +174,57 @@ var Main = (function (_super) {
         this.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.onTouchDown, this);
         this.addEventListener(egret.TouchEvent.TOUCH_END, this.onTouchUp, this);
     };
+    /**
+     * 游戏开始入口
+     * @param result
+     */
     __egretProto__.onMapItemLoaded = function (result) {
         this.mMapItems = result;
-        this.mItemCount = this.mMapItems.length;
+        this.mMaxItemCount = this.mMapItems.length;
+        this.initLevel();
+        this.initProgress();
+        this.startGame();
+    };
+    __egretProto__.startGame = function () {
+        this.mStartGame = true;
+        this.mGameOver = false;
+        this.resumeProgress();
+        this.initTimer();
+        this.resumeLevel();
+        this.mPoints = [];
         this.createMap();
         this.disorder();
         this.drawMap();
     };
     __egretProto__.createMap = function () {
-        var k = 0;
+        var typeIndex = 0;
         this.clearMap(); //清空地图
         for (var i = 0; i < this.mMapRows; ++i) {
             this.mMapArray.push([]);
             for (var j = 0; j < this.mMapCols;) {
+                // 周边一圈空白
                 if (j === 0 || j === this.mMapCols - 1 || i === 0 || i === this.mMapRows - 1) {
-                    var obj = { type: -1, item: {} };
+                    var obj = { type: -1, item: {}, isVisited: false, parent: null, crossNum: 198964 };
                     this.mMapArray[i].push(obj);
                     ++j;
                 }
                 else {
-                    var obj1 = { type: 0, item: {} };
-                    obj1.type = k;
+                    var obj1 = { type: 0, item: {}, isVisited: false, parent: null, crossNum: 198964 };
+                    obj1.type = typeIndex;
                     this.mMapArray[i].push(obj1);
                     ++j;
-                    var obj2 = { type: 0, item: {} };
-                    obj2.type = k;
+                    var obj2 = { type: 0, item: {}, isVisited: false, parent: null, crossNum: 198964 };
+                    obj2.type = typeIndex;
                     this.mMapArray[i].push(obj2);
-                    ++k;
+                    ++typeIndex;
                     ++j;
-                    if (k >= this.mItemCount) {
-                        k = 0;
+                    if (typeIndex >= this.mItemCount) {
+                        typeIndex = 0;
                     }
                 }
             }
         }
+        this.mLeftPairs = (this.mMapRows - 2) * (this.mMapCols - 2) / 2;
     };
     __egretProto__.clearMap = function () {
         this.mMapArray = [];
@@ -181,6 +265,11 @@ var Main = (function (_super) {
     __egretProto__.onTouchDown = function (event) {
     };
     __egretProto__.onTouchUp = function (event) {
+        console.log("onTouchUp, mGameOver:" + this.mGameOver + " mStartGame:" + this.mStartGame);
+        if (this.mGameOver || !this.mStartGame) {
+            console.log("onTouchUp, game over, or not start yet");
+            return;
+        }
         var xy = this.getItemXY(event.localX, event.localY);
         var curObj = this.mMapArray[xy.y][xy.x] || {};
         var curItem = curObj.item;
@@ -188,9 +277,10 @@ var Main = (function (_super) {
         // 空白区域
         if (curType < 0) {
             if (this.mLastItemObj) {
-                this.mLastItemObj.setSelect(false);
+                this.mLastItemObj.item.setSelect(false);
                 this.mLastX = 0;
                 this.mLastY = 0;
+                this.mLastItemObj = null;
             }
             return;
         }
@@ -217,20 +307,35 @@ var Main = (function (_super) {
             return;
         }
         if (this.canClean(xy.x, xy.y, this.mLastX, this.mLastY)) {
+            this.addPoint(this.mPoints, [this.mLastX, this.mLastY]);
+            var parent = this.mMapArray[this.mLastY][this.mLastX]['parent'];
+            while (this.mMapArray[parent[1]][parent[0]]['parent']) {
+                this.addPoint(this.mPoints, parent);
+                parent = this.mMapArray[parent[1]][parent[0]]['parent'];
+            }
+            this.addPoint(this.mPoints, [xy.x, xy.y]);
             this.drawLine();
-            var _this = this;
+            var thiz = this;
             var idTimeout = egret.setTimeout(function (arg) {
-                _this.cleanItem(_this.mLastItemObj);
-                _this.cleanItem(curObj);
-                _this.mLastItemObj = null;
-                _this.cleanLine();
+                curItem.setSelect(false);
+                thiz.cleanItem(thiz.mLastItemObj);
+                thiz.cleanItem(curObj);
+                thiz.mLastItemObj = null;
+                thiz.mLastX = 0;
+                thiz.mLastY = 0;
+                thiz.cleanLine();
+                if (--thiz.mLeftPairs === 0) {
+                    thiz.doSuccess();
+                }
             }, this, 100);
         }
-        // 不管能不能消除都重置状态
-        this.mLastItemObj.item.setSelect(false);
-        curItem.setSelect(false);
-        this.mLastX = 0;
-        this.mLastY = 0;
+        else {
+            this.mLastItemObj.item.setSelect(false);
+            curItem.setSelect(false);
+            this.mLastX = 0;
+            this.mLastY = 0;
+            this.mLastItemObj = null;
+        }
     };
     __egretProto__.cleanItem = function (itemObj) {
         itemObj.type = -1;
@@ -246,11 +351,30 @@ var Main = (function (_super) {
     __egretProto__.getItemCenter = function (x, y) {
         return { x: x * this.mItemWidth + this.mItemWidth / 2, y: y * this.mItemHeight + this.mItemHeight / 2 };
     };
-    __egretProto__.addPoint = function (point) {
-        this.mPoints.push(point);
+    __egretProto__.addPoint = function (points, point) {
+        if (!this.hasPoint(point, points)) {
+            points.push(point);
+        }
     };
-    __egretProto__.cleanPoint = function () {
-        this.mPoints = [];
+    __egretProto__.hasPoint = function (point, points) {
+        if (!point) {
+            return false;
+        }
+        points = points || [];
+        for (var i = 0, length = points.length; i < length; i++) {
+            if (points[i][0] === point[0] && points[i][1] === point[1]) {
+                return true;
+            }
+        }
+        return false;
+    };
+    /**
+     * 将数组A中数据copy置数组B中
+     **/
+    __egretProto__.concatArray = function (arrayA, arrayB) {
+        for (var i = 0, length = arrayA.length; i < length; i++) {
+            arrayB.push(arrayA[i]);
+        }
     };
     __egretProto__.drawLine = function () {
         var points = this.mPoints, len = points.length;
@@ -273,215 +397,184 @@ var Main = (function (_super) {
         if (this.mLine) {
             this.removeChild(this.mLine);
         }
-        this.cleanPoint();
+        this.mPoints = [];
     };
     __egretProto__.canClean = function (x1, y1, x2, y2) {
+        // 同一点，返回
         if (x1 === x2 && y1 === y2) {
             return false;
         }
-        if (this.mMapArray[y1][x1].type != this.mMapArray[y2][x2].type) {
+        var typeA = this.mMapArray[y1][x1].type, typeB = this.mMapArray[y2][x2].type;
+        // 已消除，返回
+        if (typeA < 0 || typeB < 0) {
             return false;
         }
-        if (this.mMapArray[y1][x1].type < 0 || this.mMapArray[y2][x2].type < 0) {
+        // 类型不同，返回
+        if (typeA != typeB) {
             return false;
         }
-        if (x1 === x2) {
-            if (1 === y1 - y2 || 1 === y2 - y1) {
-                this.addPoint([x1, y1]);
-                this.addPoint([x2, y2]);
-                return true;
-            }
-            else if (this.isColEmpty(x1, y1, x2, y2)) {
-                this.addPoint([x1, y1]);
-                this.addPoint([x2, y2]);
-                return true;
-            }
-            else {
-                var i = 1;
-                while ((x1 + i < this.mMapCols) && this.mMapArray[y1][x1 + i].type < 0) {
-                    if (this.mMapArray[y2][x2 + i].type >= 0) {
-                        break;
-                    }
-                    else {
-                        if (this.isColEmpty(x1 + i, y1, x1 + i, y2)) {
-                            this.addPoint([x1, y1]);
-                            this.addPoint([x1 + i, y1]);
-                            this.addPoint([x1 + i, y2]);
-                            this.addPoint([x2, y2]);
-                            return true;
+        this.resetMapArray();
+        var queue = [];
+        queue.push([x1, y1]);
+        this.mMapArray[y1][x1]['isVisited'] = true;
+        this.mMapArray[y1][x1]['crossNum'] = -1;
+        while (queue.length > 0) {
+            var curPoint = queue.shift();
+            var orgX = curPoint[0], orgY = curPoint[1];
+            var x, y, curType;
+            //向上
+            x = orgX;
+            y = orgY - 1;
+            for (; y >= 0; y--) {
+                if (!this.mMapArray[y][x]['isVisited']) {
+                    this.mMapArray[y][x]['parent'] = [orgX, orgY];
+                    this.mMapArray[y][x]['isVisited'] = true;
+                    this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+                    curType = this.mMapArray[y][x]['type'];
+                    //空白，可继续查找
+                    if (curType < 0) {
+                        if (this.mMapArray[y][x]['crossNum'] < 2) {
+                            queue.push([x, y]);
                         }
-                        i++;
                     }
-                }
-                i = 1;
-                while ((x1 - i >= 0) && this.mMapArray[y1][x1 - i].type < 0) {
-                    if (this.mMapArray[y2][x2 - i].type >= 0) {
-                        break;
-                    }
-                    else {
-                        if (this.isColEmpty(x1 - i, y1, x1 - i, y2)) {
-                            this.addPoint([x1, y1]);
-                            this.addPoint([x1 - i, y1]);
-                            this.addPoint([x1 - i, y2]);
-                            this.addPoint([x2, y2]);
-                            return true;
-                        }
-                        i++;
-                    }
-                }
-            }
-        }
-        if (y1 === y2) {
-            if (1 === x1 - x2 || 1 === x2 - x1) {
-                this.addPoint([x1, y1]);
-                this.addPoint([x2, y2]);
-                return true;
-            }
-            else if (this.isRowEmpty(x1, y1, x2, y2)) {
-                this.addPoint([x1, y1]);
-                this.addPoint([x2, y2]);
-                return true;
-            }
-            else {
-                var i = 1;
-                while ((y1 + i < this.mMapRows) && this.mMapArray[y1 + i][x1].type < 0) {
-                    if (this.mMapArray[y2 + i][x2].type >= 0) {
-                        break;
-                    }
-                    else {
-                        if (this.isRowEmpty(x1, y1 + i, x2, y1 + i)) {
-                            this.addPoint([x1, y1]);
-                            this.addPoint([x1, y1 + i]);
-                            this.addPoint([x2, y1 + i]);
-                            this.addPoint([x2, y2]);
-                            return true;
-                        }
-                        i++;
-                    }
-                }
-                i = 1;
-                while ((y1 - i >= 0) && this.mMapArray[y1 - i][x1].type < 0) {
-                    if (this.mMapArray[y2 - i][x2].type >= 0) {
-                        break;
-                    }
-                    else {
-                        if (this.isRowEmpty(x1, y1 - i, x2, y1 - i)) {
-                            this.addPoint([x1, y1]);
-                            this.addPoint([x1, y1 - i]);
-                            this.addPoint([x2, y1 - i]);
-                            this.addPoint([x2, y2]);
-                            return true;
-                        }
-                        i++;
-                    }
-                }
-            }
-        }
-        //一个拐点
-        if (this.isRowEmpty(x1, y1, x2, y1) && this.mMapArray[y1][x2].type < 0) {
-            if (this.isColEmpty(x2, y1, x2, y2)) {
-                this.addPoint([x1, y1]);
-                this.addPoint([x2, y1]);
-                this.addPoint([x2, y2]);
-                return true;
-            }
-        }
-        if (this.isColEmpty(x1, y1, x1, y2) && this.mMapArray[y2][x1].type < 0) {
-            if (this.isRowEmpty(x1, y2, x2, y2)) {
-                this.addPoint([x1, y1]);
-                this.addPoint([x1, y2]);
-                this.addPoint([x2, y2]);
-                return true;
-            }
-        }
-        //不在一行的两个拐点
-        if (x1 != x2 && y1 != y2) {
-            i = x1;
-            while (++i < this.mMapCols) {
-                if (this.mMapArray[y1][i].type >= 0) {
-                    break;
-                }
-                else {
-                    if (this.isColEmpty(i, y1, i, y2) && this.isRowEmpty(i, y2, x2, y2) && this.mMapArray[y2][i].type < 0) {
-                        this.addPoint([x1, y1]);
-                        this.addPoint([i, y1]);
-                        this.addPoint([i, y2]);
-                        this.addPoint([x2, y2]);
+                    else if (curType === typeA && x == x2 && y == y2) {
                         return true;
                     }
-                }
-            }
-            i = x1;
-            while (--i >= 0) {
-                if (this.mMapArray[y1][i].type >= 0) {
-                    break;
-                }
-                else {
-                    if (this.isColEmpty(i, y1, i, y2) && this.isRowEmpty(i, y2, x2, y2) && this.mMapArray[y2][i].type < 0) {
-                        this.addPoint([x1, y1]);
-                        this.addPoint([i, y1]);
-                        this.addPoint([i, y2]);
-                        this.addPoint([x2, y2]);
-                        return true;
+                    else {
+                        break;
                     }
                 }
-            }
-            i = y1;
-            while (++i < this.mMapRows) {
-                if (this.mMapArray[i][x1] >= 0) {
+                else {
                     break;
                 }
-                else {
-                    if (this.isRowEmpty(x1, i, x2, i) && this.isColEmpty(x2, i, x2, y2) && this.mMapArray[i][x2].type < 0) {
-                        this.addPoint([x1, y1]);
-                        this.addPoint([x1, i]);
-                        this.addPoint([x2, i]);
-                        this.addPoint([x2, y2]);
+            }
+            //向下
+            x = orgX;
+            y = orgY + 1;
+            for (; y < this.mMapRows; y++) {
+                if (!this.mMapArray[y][x]['isVisited']) {
+                    this.mMapArray[y][x]['parent'] = [orgX, orgY];
+                    this.mMapArray[y][x]['isVisited'] = true;
+                    this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+                    curType = this.mMapArray[y][x]['type'];
+                    //空白，可继续查找
+                    if (curType < 0) {
+                        if (this.mMapArray[y][x]['crossNum'] < 2) {
+                            queue.push([x, y]);
+                        }
+                    }
+                    else if (curType === typeA && x == x2 && y == y2) {
                         return true;
                     }
+                    else {
+                        break;
+                    }
                 }
-            }
-            i = y1;
-            while (--i >= 0) {
-                if (this.mMapArray[i][x1] >= 0) {
+                else {
                     break;
                 }
-                else {
-                    if (this.isRowEmpty(x1, i, x2, i) && this.isColEmpty(x2, i, x2, y2) && this.mMapArray[i][x2].type < 0) {
-                        this.addPoint([x1, y1]);
-                        this.addPoint([x1, i]);
-                        this.addPoint([x2, i]);
-                        this.addPoint([x2, y2]);
+            }
+            //向左
+            x = orgX - 1;
+            y = orgY;
+            for (; x >= 0; x--) {
+                if (!this.mMapArray[y][x]['isVisited']) {
+                    this.mMapArray[y][x]['parent'] = [orgX, orgY];
+                    this.mMapArray[y][x]['isVisited'] = true;
+                    this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+                    curType = this.mMapArray[y][x]['type'];
+                    //空白，可继续查找
+                    if (curType < 0) {
+                        if (this.mMapArray[y][x]['crossNum'] < 2) {
+                            queue.push([x, y]);
+                        }
+                    }
+                    else if (curType === typeA && x == x2 && y == y2) {
                         return true;
                     }
+                    else {
+                        break;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+            //向右
+            x = orgX + 1;
+            y = orgY;
+            for (; x < this.mMapCols; x++) {
+                if (!this.mMapArray[y][x]['isVisited']) {
+                    this.mMapArray[y][x]['parent'] = [orgX, orgY];
+                    this.mMapArray[y][x]['isVisited'] = true;
+                    this.mMapArray[y][x]['crossNum'] = this.mMapArray[orgY][orgX]['crossNum'] + 1;
+                    curType = this.mMapArray[y][x]['type'];
+                    //空白，可继续查找
+                    if (curType < 0) {
+                        if (this.mMapArray[y][x]['crossNum'] < 2) {
+                            queue.push([x, y]);
+                        }
+                    }
+                    else if (curType === typeA && x == x2 && y == y2) {
+                        return true;
+                    }
+                    else {
+                        break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
         }
         return false;
     };
-    __egretProto__.isRowEmpty = function (x1, y1, x2, y2) {
-        if (y1 != y2) {
-            return false;
-        }
-        x1 > x2 && (x1 = x1 + x2, x2 = x1 - x2, x1 = x1 - x2); //强制x1比x2小
-        for (var j = x1 + 1; j < x2; ++j) {
-            if (this.mMapArray[y1][j].type >= 0) {
-                return false;
+    __egretProto__.resetMapArray = function () {
+        for (var i = 0; i < this.mMapRows; i++) {
+            for (var j = 0; j < this.mMapCols; j++) {
+                this.mMapArray[i][j]['isVisited'] = false;
+                this.mMapArray[i][j]['crossNum'] = 198964;
+                this.mMapArray[i][j]['parent'] = null;
             }
         }
-        return true;
     };
-    __egretProto__.isColEmpty = function (x1, y1, x2, y2) {
-        if (x1 != x2) {
-            return false;
+    /**
+     * 俗称作死
+     */
+    __egretProto__.doDie = function () {
+        this.mStartGame = false;
+        this.mGameOver = true;
+        alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
+    };
+    __egretProto__.doSuccess = function () {
+        this.mStartGame = false;
+        this.mGameOver = true;
+        this.stopTimer();
+        this.mLevel++;
+        this.setCookie("level", this.mLevel);
+        this.setCookie("difficulty", this.mGameDifficulty);
+        this.setCookie("itemCount", this.mItemCount);
+        alert("哟，不错哦! cost:" + (this.DEFAULT_PROGRESS - this.mProgress) + "s");
+        if (this.mItemCount < this.mMaxItemCount) {
+            this.mItemCount++;
         }
-        y1 > y2 && (y1 = y1 + y2, y2 = y1 - y2, y1 = y1 - y2); //强制y1比y2小
-        for (var i = y1 + 1; i < y2; ++i) {
-            if (this.mMapArray[i][x1].type >= 0) {
-                return false;
-            }
+        else if (this.mGameDifficulty != 2) {
+            this.mGameDifficulty = 2;
+            alert("进入朝鲜模式");
         }
-        return true;
+        this.startGame();
+    };
+    __egretProto__.setCookie = function (key, value) {
+        var date = new Date();
+        date.setTime(date.getTime() + 1 * 1000 * 3600 * 24 * 365);
+        document.cookie = key + "=" + encodeURI(value) + ";expires=" + date.toUTCString() + ";path=/";
+    };
+    __egretProto__.getCookie = function (key) {
+        var cookie = document.cookie, regExp = new RegExp("[sS]*" + key + "=([^;]*)(;|$)"), ret = cookie.match(regExp);
+        if (ret != null) {
+            return ret[1];
+        }
+        return null;
     };
     /**
      * 根据name关键字创建一个Bitmap对象。name属性请参考resources/resource.json配置文件的内容。
