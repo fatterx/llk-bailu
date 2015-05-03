@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0a70187b-b968-481b-a9fb-009668f20e55" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/bin-debug/src/Main.js" afterPath="$PROJECT_DIR$/bin-debug/src/Main.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Main.ts" afterPath="$PROJECT_DIR$/src/Main.ts" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="llk-bailu.iws" />
@@ -283,7 +281,13 @@
       <option name="project" value="LOCAL" />
       <updated>1430575488003</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="添加背景拼图，添加上帝模式">
+      <created>1430630665108</created>
+      <option name="number" value="00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1430630665108</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -315,7 +319,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="完善游戏逻辑" />
-    <option name="LAST_COMMIT_MESSAGE" value="完善游戏逻辑" />
+    <MESSAGE value="添加背景拼图，添加上帝模式" />
+    <option name="LAST_COMMIT_MESSAGE" value="添加背景拼图，添加上帝模式" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
