@@ -48,8 +48,8 @@ class Main extends egret.DisplayObjectContainer {
     private onAddToStage(event:egret.Event) {
         //设置加载进度界面
         //Config to load process interface
-        this.loadingView = new LoadingUI();
-        this.stage.addChild(this.loadingView);
+        //this.loadingView = new LoadingUI();
+        //this.stage.addChild(this.loadingView);
 
         //初始化Resource资源加载库
         //initiate Resource loading library
@@ -75,11 +75,12 @@ class Main extends egret.DisplayObjectContainer {
      */
     private onResourceLoadComplete(event:RES.ResourceEvent):void {
         if (event.groupName == "preload") {
-            this.stage.removeChild(this.loadingView);
+           // this.stage.removeChild(this.loadingView);
             RES.removeEventListener(RES.ResourceEvent.GROUP_COMPLETE, this.onResourceLoadComplete, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_LOAD_ERROR, this.onResourceLoadError, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_PROGRESS, this.onResourceProgress, this);
             this.createGameScene();
+            console.log("{\"action\":\"loadComplete\"}");
         }
     }
 
@@ -89,7 +90,7 @@ class Main extends egret.DisplayObjectContainer {
      */
     private onResourceLoadError(event:RES.ResourceEvent):void {
         //TODO
-        console.warn("Group:" + event.groupName + " has failed to load");
+        //console.warn("Group:" + event.groupName + " has failed to load");
         //忽略加载失败的项目
         //Ignore the loading failed projects
         this.onResourceLoadComplete(event);
@@ -338,10 +339,10 @@ class Main extends egret.DisplayObjectContainer {
     private mLastItemObj;
 
     private onTouchUp(event:egret.TouchEvent):void {
-        console.log("onTouchUp, mGameOver:" + this.mGameOver
-            + " mStartGame:" + this.mStartGame);
+        //console.log("onTouchUp, mGameOver:" + this.mGameOver
+        //    + " mStartGame:" + this.mStartGame);
         if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchUp, game over, or not start yet");
+            //console.log("onTouchUp, game over, or not start yet");
             return;
         }
 
@@ -680,6 +681,7 @@ class Main extends egret.DisplayObjectContainer {
     private doDie():void {
         this.mStartGame = false;
         this.mGameOver = true;
+        console.log("{\"action\":\"gameover\",\"score\":\""+  this.mLeftPairs+"\",\"score2\":\"xxx\",\"gameId\":\"llk\"}");
         alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
     }
 
@@ -691,7 +693,7 @@ class Main extends egret.DisplayObjectContainer {
 
         this.setCookie("level", this.mLevel);
         this.setCookie("difficulty", this.mGameDifficulty);
-
+        console.log("{\"action\":\"gameover\",\"score\":\""+  (this.DEFAULT_PROGRESS - this.mProgress)+"\",\"score2\":\"xxx\",\"gameId\":\"llk\"}");
         alert("哟，不错哦! cost:" + (this.DEFAULT_PROGRESS - this.mProgress) + "s");
 
         if (this.mItemCount < this.mMaxItemCount) {

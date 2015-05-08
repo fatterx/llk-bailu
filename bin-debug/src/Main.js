@@ -45,8 +45,8 @@ var Main = (function (_super) {
     __egretProto__.onAddToStage = function (event) {
         //设置加载进度界面
         //Config to load process interface
-        this.loadingView = new LoadingUI();
-        this.stage.addChild(this.loadingView);
+        //this.loadingView = new LoadingUI();
+        //this.stage.addChild(this.loadingView);
         //初始化Resource资源加载库
         //initiate Resource loading library
         RES.addEventListener(RES.ResourceEvent.CONFIG_COMPLETE, this.onConfigComplete, this);
@@ -69,11 +69,12 @@ var Main = (function (_super) {
      */
     __egretProto__.onResourceLoadComplete = function (event) {
         if (event.groupName == "preload") {
-            this.stage.removeChild(this.loadingView);
+            // this.stage.removeChild(this.loadingView);
             RES.removeEventListener(RES.ResourceEvent.GROUP_COMPLETE, this.onResourceLoadComplete, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_LOAD_ERROR, this.onResourceLoadError, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_PROGRESS, this.onResourceProgress, this);
             this.createGameScene();
+            console.log("{\"action\":\"loadComplete\"}");
         }
     };
     /**
@@ -82,7 +83,7 @@ var Main = (function (_super) {
      */
     __egretProto__.onResourceLoadError = function (event) {
         //TODO
-        console.warn("Group:" + event.groupName + " has failed to load");
+        //console.warn("Group:" + event.groupName + " has failed to load");
         //忽略加载失败的项目
         //Ignore the loading failed projects
         this.onResourceLoadComplete(event);
@@ -126,9 +127,7 @@ var Main = (function (_super) {
     };
     __egretProto__.resumeLevel = function () {
         this.mItemCount = parseInt(this.getCookie("itemCount"));
-        console.log("resumeLevel, itemCount:" + this.mItemCount);
         this.mItemCount = isNaN(this.mItemCount) ? this.mMaxItemCount - 3 : this.mItemCount;
-        console.log("resumeLevel, itemCount2:" + this.mItemCount);
         this.mLevel = parseInt(this.getCookie("level"));
         this.mTxtLevel.text = "level:" + (isNaN(this.mLevel) ? 1 : this.mLevel);
         this.mGameDifficulty = parseInt(this.getCookie("difficulty"));
@@ -265,9 +264,10 @@ var Main = (function (_super) {
     __egretProto__.onTouchDown = function (event) {
     };
     __egretProto__.onTouchUp = function (event) {
-        console.log("onTouchUp, mGameOver:" + this.mGameOver + " mStartGame:" + this.mStartGame);
+        //console.log("onTouchUp, mGameOver:" + this.mGameOver
+        //    + " mStartGame:" + this.mStartGame);
         if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchUp, game over, or not start yet");
+            //console.log("onTouchUp, game over, or not start yet");
             return;
         }
         var xy = this.getItemXY(event.localX, event.localY);
@@ -544,6 +544,7 @@ var Main = (function (_super) {
     __egretProto__.doDie = function () {
         this.mStartGame = false;
         this.mGameOver = true;
+        console.log("{\"action\":\"gameover\",\"score\":\"" + this.mLeftPairs + "\",\"score2\":\"xxx\",\"gameId\":\"llk\"}");
         alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
     };
     __egretProto__.doSuccess = function () {
@@ -553,10 +554,11 @@ var Main = (function (_super) {
         this.mLevel++;
         this.setCookie("level", this.mLevel);
         this.setCookie("difficulty", this.mGameDifficulty);
-        this.setCookie("itemCount", this.mItemCount);
+        console.log("{\"action\":\"gameover\",\"score\":\"" + (this.DEFAULT_PROGRESS - this.mProgress) + "\",\"score2\":\"xxx\",\"gameId\":\"llk\"}");
         alert("哟，不错哦! cost:" + (this.DEFAULT_PROGRESS - this.mProgress) + "s");
         if (this.mItemCount < this.mMaxItemCount) {
             this.mItemCount++;
+            this.setCookie("itemCount", this.mItemCount);
         }
         else if (this.mGameDifficulty != 2) {
             this.mGameDifficulty = 2;
