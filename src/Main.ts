@@ -128,7 +128,6 @@ class Main extends egret.DisplayObjectContainer {
 
     private resumeProgress() {
         this.mProgress = this.mGameDifficulty == 1 ? this.DEFAULT_PROGRESS : this.DEFAULT_PROGRESS - 5 * this.mLevel;
-        this.mProgress = this.mProgress < 30 ? 30 : this.mProgress;
     }
 
     private mLevel = 1;
@@ -159,19 +158,11 @@ class Main extends egret.DisplayObjectContainer {
         this.mGameDifficulty = isNaN(this.mGameDifficulty) ? 1 : this.mGameDifficulty;
     }
 
-    private mStartTime:number;
     private mTimer:egret.Timer;
 
     private initTimer() {
         //创建一个计时器对象
-        if (!this.mTimer) {
-            this.mTimer = new egret.Timer(1000, this.mProgress);
-        } else {
-            this.resetTimer();
-            this.mTimer.repeatCount = this.mProgress;
-        }
-
-        this.mStartTime = this.mProgress;
+        this.mTimer = new egret.Timer(1000, this.mProgress);
         //注册事件侦听器
         this.mTimer.addEventListener(egret.TimerEvent.TIMER, this.onTimerStart, this);
         this.mTimer.addEventListener(egret.TimerEvent.TIMER_COMPLETE, this.onTimerEnd, this);
@@ -250,8 +241,6 @@ class Main extends egret.DisplayObjectContainer {
         this.createMap();
         this.disorder();
         this.drawMap();
-
-        // this.drawGameOverBg();
     }
 
     private mMapArray:Array<any>;
@@ -339,35 +328,6 @@ class Main extends egret.DisplayObjectContainer {
 
 
     private onTouchDown(event:egret.TouchEvent):void {
-        if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchDown, game over, or not start yet");
-            return;
-        }
-
-        var xy = this.getItemXY(event.localX, event.localY);
-
-        //console.log("onTouchDown, xy:" + xy);
-        var curObj = this.mMapArray[xy.y][xy.x] || {};
-        var curType = curObj.type;
-
-        if (curType === 2) {
-            //console.log("diaosi");
-            var now = +new Date();
-            var diff = now - this.mLastTouchTs;
-            if (diff < 500) {
-                this.mTouchTimes++;
-                if (this.mTouchTimes === 14) {
-                    this.resetEgg();
-                    this.playEgg();
-                }
-            } else {
-                this.resetEgg();
-            }
-
-            this.mLastTouchTs = now;
-        } else {
-            this.resetEgg();
-        }
 
     }
 
@@ -378,6 +338,8 @@ class Main extends egret.DisplayObjectContainer {
     private mLastItemObj;
 
     private onTouchUp(event:egret.TouchEvent):void {
+        console.log("onTouchUp, mGameOver:" + this.mGameOver
+            + " mStartGame:" + this.mStartGame);
         if (this.mGameOver || !this.mStartGame) {
             console.log("onTouchUp, game over, or not start yet");
             return;
@@ -728,17 +690,15 @@ class Main extends egret.DisplayObjectContainer {
         this.mLevel++;
 
         this.setCookie("level", this.mLevel);
+        this.setCookie("difficulty", this.mGameDifficulty);
 
-        this.drawGameOverBg();
-
-        alert("哟，不错哦! cost:" + (this.mStartTime - this.mProgress) + "s");
+        alert("哟，不错哦! cost:" + (this.DEFAULT_PROGRESS - this.mProgress) + "s");
 
         if (this.mItemCount < this.mMaxItemCount) {
             this.mItemCount++;
             this.setCookie("itemCount", this.mItemCount);
         } else if (this.mGameDifficulty != 2) {
             this.mGameDifficulty = 2;
-            this.setCookie("difficulty", this.mGameDifficulty);
             alert("进入朝鲜模式");
         }
 
@@ -775,210 +735,6 @@ class Main extends egret.DisplayObjectContainer {
         result.texture = texture;
         return result;
     }
-
-    private mLastTouchTs:number;
-    private mTouchTimes:number;
-
-    private resetEgg() {
-        this.mTouchTimes = 0;
-    }
-
-    private playEgg() {
-        this.startGodMode();
-    }
-
-    private startGodMode() {
-        this.doSuccess();
-    }
-
-    private drawGameOverBg() {
-        this.mMapArray = this.mBgs[(Math.round(Math.random() * 10)) % this.mBgs.length];
-        this.fillGameOverBg();
-        this.performDrawBg();
-    }
-
-    private fillGameOverBg() {
-        var typeText = Math.round(Math.random() * 10) % this.mMaxItemCount;
-        var typeBg = Math.round(Math.random() * 10 * typeText) % this.mMaxItemCount;
-        for (var i = 0; i < this.mMapRows - 2; ++i) {
-            for (var j = 0; j < this.mMapCols - 2; ++j) {
-                var type = this.mMapArray[i][j];
-                if (type === 0) {
-                    this.mMapArray[i][j] = typeBg;
-                } else if (type === 1) {
-                    this.mMapArray[i][j] = typeText;
-                }
-            }
-        }
-    }
-
-    private performDrawBg() {
-        var x = 60, y = 60;
-        var maxWidth = (this.mMapCols - 2) * this.mItemWidth;
-        var maxHeight = (this.mMapRows - 2) * this.mItemHeight;
-
-        for (var i = 0; i < this.mMapRows - 2; ++i) {
-            for (var j = 0; j < this.mMapCols - 2; ++j) {
-
-                var type = this.mMapArray[i][j];
-                if (type != -1) {
-                    var item:MapItem = new MapItem();
-                    this.addChild(item);
-                    item.x = x;
-                    item.y = y;
-                    item.setType(type);
-                    item.setContent(this.mMapItems[type]);
-                }
-                x = x < maxWidth ? x + this.mItemWidth : 60;
-            }
-
-            y = y < maxHeight ? y + this.mItemHeight : 60;
-        }
-    }
-
-    private mNiu = [
-        [0, 0, 1, 1, 0, 0],
-        [0, 0, 1, 1, 0, 0],
-        [0, 1, 1, 1, 1, 1],
-        [0, 1, 0, 1, 0, 0],
-        [1, 1, 1, 1, 1, 1],
-        [0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 1, 0, 0],
-    ];
-
-    private mNiuB = [
-        [0, 1, 0, 1, 0, 0],
-        [0, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1],
-        [0, 0, 0, 1, 0, 0],
-        [0, 1, 0, 0, 0, 1],
-        [0, 1, 1, 0, 0, 1],
-        [0, 1, 0, 1, 0, 0],
-        [0, 1, 1, 0, 0, 1],
-    ];
-
-    private mDiao = [
-        [1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1],
-        [1, 0, 1, 1, 1, 0],
-        [1, 0, 1, 1, 1, 0],
-        [1, 0, 0, 1, 0, 0],
-        [1, 0, 1, 1, 1, 0],
-        [1, 0, 1, 1, 1, 0],
-        [1, 0, 0, 1, 0, 0],
-    ];
-
-    private mJiong = [
-        [1, 1, 1, 1, 1, 1],
-        [1, 0, 1, 1, 0, 1],
-        [1, 0, 1, 1, 0, 1],
-        [1, 1, 0, 0, 1, 1],
-        [1, 0, 0, 0, 0, 1],
-        [1, 0, 1, 1, 0, 1],
-        [1, 0, 1, 1, 0, 1],
-        [1, 1, 1, 1, 1, 1],
-    ];
-
-    private mSheng = [
-        [1, 1, 1, 0, 1, 0],
-        [1, 0, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1, 1],
-        [1, 0, 1, 0, 1, 0],
-        [1, 1, 1, 1, 1, 1],
-        [1, 0, 1, 0, 1, 0],
-        [1, 0, 1, 0, 1, 0],
-        [1, 0, 1, 1, 1, 1],
-    ];
-
-    private m2B = [
-        [1, 1, 1, 1, 1, 0],
-        [0, 0, 1, 1, 0, 1],
-        [0, 0, 1, 1, 0, 1],
-        [0, 0, 1, 1, 1, 0],
-        [0, 1, 0, 1, 1, 0],
-        [1, 0, 0, 1, 0, 1],
-        [1, 0, 0, 1, 0, 1],
-        [1, 1, 1, 1, 1, 0],
-    ];
-
-    private mAPlus = [
-        [0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 1, 1, 1],
-        [0, 0, 1, 0, 1, 0],
-        [0, 0, 1, 0, 0, 0],
-        [0, 1, 0, 1, 0, 0],
-        [1, 1, 1, 1, 1, 0],
-        [1, 0, 0, 0, 1, 0],
-        [1, 0, 0, 0, 1, 0],
-    ];
-
-    private mA = [
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0],
-        [0, 1, 0, 1, 0, 0],
-        [1, 1, 1, 1, 1, 0],
-        [1, 0, 0, 0, 1, 0],
-        [1, 0, 0, 0, 1, 0],
-    ];
-
-    private mB = [
-        [0, 0, 0, 0, 0, 0],
-        [0, 1, 1, 1, 0, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 1, 1, 1, 0, 0],
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 1, 1, 0, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 1, 1, 1, 0, 0],
-    ];
-
-    private mC = [
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 1, 1, 0],
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0],
-        [0, 0, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0, 0],
-    ];
-
-    private mD = [
-        [0, 0, 0, 0, 0, 0],
-        [0, 1, 1, 1, 0, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 1, 1, 1, 0, 0],
-        [0, 0, 0, 0, 0, 0],
-    ];
-
-    private mDMinus = [
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 1, 1],
-        [1, 1, 1, 0, 0, 0],
-        [1, 0, 0, 1, 0, 0],
-        [1, 0, 0, 1, 0, 0],
-        [1, 0, 0, 1, 0, 0],
-        [1, 0, 0, 1, 0, 0],
-        [1, 1, 1, 0, 0, 0],
-    ];
-
-    private mX = [
-        [0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 1],
-        [1, 1, 0, 0, 1, 1],
-        [0, 1, 1, 1, 1, 0],
-        [0, 0, 1, 1, 0, 0],
-        [0, 1, 1, 1, 1, 0],
-        [1, 1, 0, 0, 1, 1],
-        [1, 0, 0, 0, 0, 1]
-    ];
-
-    private mBgs:Array<any> = [this.m2B, this.mA, this.mAPlus, this.mB, this.mC, this.mD, this.mDMinus, this.mX, this.mDiao, this.mNiu, this.mNiuB, this.mJiong, this.mSheng];
 }
+
 
