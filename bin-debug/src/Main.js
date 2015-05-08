@@ -430,6 +430,7 @@ var Main = (function (_super) {
         }
     };
     __egretProto__.onTouchUp = function (event) {
+        console.log("onTouchUp, mGameOver:" + this.mGameOver + " mStartGame:" + this.mStartGame);
         if (this.mGameOver || !this.mStartGame) {
             console.log("onTouchUp, game over, or not start yet");
             return;
