@@ -48,9 +48,8 @@ class Main extends egret.DisplayObjectContainer {
     private onAddToStage(event:egret.Event) {
         //设置加载进度界面
         //Config to load process interface
-        this.loadingView = new LoadingUI();
-        this.stage.addChild(this.loadingView);
-
+        //this.loadingView = new LoadingUI();
+        //this.stage.addChild(this.loadingView);
         //初始化Resource资源加载库
         //initiate Resource loading library
         RES.addEventListener(RES.ResourceEvent.CONFIG_COMPLETE, this.onConfigComplete, this);
@@ -75,11 +74,12 @@ class Main extends egret.DisplayObjectContainer {
      */
     private onResourceLoadComplete(event:RES.ResourceEvent):void {
         if (event.groupName == "preload") {
-            this.stage.removeChild(this.loadingView);
+            //this.stage.removeChild(this.loadingView);
             RES.removeEventListener(RES.ResourceEvent.GROUP_COMPLETE, this.onResourceLoadComplete, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_LOAD_ERROR, this.onResourceLoadError, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_PROGRESS, this.onResourceProgress, this);
             this.createGameScene();
+            console.log("{\"action\":\"loadComplete\"}");
         }
     }
 
@@ -208,8 +208,8 @@ class Main extends egret.DisplayObjectContainer {
         var stageW:number = this.stage.stageWidth;
         var stageH:number = this.stage.stageHeight;
 
-        var sky:egret.Bitmap = this.createBitmapByName("gameBg");
-        this.addChild(sky);
+       // var sky:egret.Bitmap = this.createBitmapByName("gameBg");
+       // this.addChild(sky);
 
         //根据name关键字，异步获取一个json配置文件，name属性请参考resources/resource.json配置文件的内容。
         // Get asynchronously a json configuration file according to name keyword. As for the property of name please refer to the configuration file of resources/resource.json.
@@ -242,6 +242,8 @@ class Main extends egret.DisplayObjectContainer {
         this.mStartGame = true;
         this.mGameOver = false;
 
+        //this.cleanMap();
+
         this.resumeProgress();
         this.initTimer();
         this.resumeLevel();
@@ -258,7 +260,7 @@ class Main extends egret.DisplayObjectContainer {
 
     private createMap():void {
         var typeIndex = 0;
-        this.clearMap(); //清空地图
+        this.clearMapArray(); //清空地图
         for (var i = 0; i < this.mMapRows; ++i) {
             this.mMapArray.push([]);
             for (var j = 0; j < this.mMapCols;) {
@@ -290,11 +292,12 @@ class Main extends egret.DisplayObjectContainer {
         this.mLeftPairs = (this.mMapRows - 2) * (this.mMapCols - 2) / 2;
     }
 
-    private clearMap():void {
+    private clearMapArray():void {
         this.mMapArray = [];
     }
 
     private drawMap():void {
+        console.log("drawMap")
         var x = 0, y = 0;
         var maxWidth = (this.mMapCols - 1) * this.mItemWidth;
         var maxHeight = (this.mMapRows - 1) * this.mItemHeight;
@@ -340,7 +343,6 @@ class Main extends egret.DisplayObjectContainer {
 
     private onTouchDown(event:egret.TouchEvent):void {
         if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchDown, game over, or not start yet");
             return;
         }
 
@@ -377,10 +379,8 @@ class Main extends egret.DisplayObjectContainer {
     private mLastItemObj;
 
     private onTouchUp(event:egret.TouchEvent):void {
-        console.log("onTouchUp, mGameOver:" + this.mGameOver
-            + " mStartGame:" + this.mStartGame);
         if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchUp, game over, or not start yet");
+            //console.log("onTouchUp, game over, or not start yet");
             return;
         }
 
@@ -468,9 +468,38 @@ class Main extends egret.DisplayObjectContainer {
         }
     }
 
+    private cleanMap(){
+        if(!this.mMapArray || this.mMapArray.length <= 0){
+            return;
+        }
+
+        for (var i = 0, rows = this.mMapArray.length; i < rows; ++i) {
+            for (var j = 0, cols = this.mMapArray[0].length; j < cols; ++j) {
+                var itemObj = this.mMapArray[i][j];
+                if(itemObj){
+                    var type = itemObj.type;
+                    if (type != -1) {
+                        //console.log(itemObj);
+                        this.cleanItem(itemObj);
+                    }
+                }
+            }
+        }
+    }
+
     private cleanItem(itemObj) {
+        if(!itemObj){
+            return;
+        }
+
         itemObj.type = -1;
-        this.removeChild(itemObj.item);
+        try {
+            if(itemObj.item){
+                this.removeChild(itemObj.item);
+            }
+        } catch (e){
+            console.error(e);
+        }
     }
 
     private onTouchMove(event:egret.TouchEvent):void {
@@ -719,7 +748,15 @@ class Main extends egret.DisplayObjectContainer {
     private doDie():void {
         this.mStartGame = false;
         this.mGameOver = true;
-        alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
+        this.drawGameOverBg();
+        console.log("{\"action\":\"gameover\",\"score\":\"" + (this.mStartTime - this.mProgress) + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
+
+        var thiz = this;
+        var idTimeout:number = egret.setTimeout(function (arg) {
+            alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
+            thiz.cleanMap();
+            thiz.startGame();
+        }, this, 100);
     }
 
     private doSuccess():void {
@@ -730,9 +767,17 @@ class Main extends egret.DisplayObjectContainer {
 
         this.setCookie("level", this.mLevel);
 
+        this.cleanMap();
         this.drawGameOverBg();
+        console.log("{\"action\":\"gameover\",\"score\":\"" + (this.mStartTime - this.mProgress) + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
 
-        alert("哟，不错哦! cost:" + (this.mStartTime - this.mProgress) + "s");
+        var thiz = this;
+        var idTimeout:number = egret.setTimeout(function (arg) {
+            alert("哟，不错哦! cost:" + (thiz.mStartTime - thiz.mProgress) + "s");
+            thiz.cleanMap();
+            thiz.startGame();
+        }, this, 100);
+
 
         if (this.mItemCount < this.mMaxItemCount) {
             this.mItemCount++;
@@ -742,8 +787,6 @@ class Main extends egret.DisplayObjectContainer {
             this.setCookie("difficulty", this.mGameDifficulty);
             alert("进入朝鲜模式");
         }
-
-        this.startGame();
     }
 
     private setCookie(key, value):void {
@@ -805,9 +848,9 @@ class Main extends egret.DisplayObjectContainer {
             for (var j = 0; j < this.mMapCols - 2; ++j) {
                 var type = this.mMapArray[i][j];
                 if (type === 0) {
-                    this.mMapArray[i][j] = typeBg;
+                    this.mMapArray[i][j] = {type:typeBg, item:new MapItem()};
                 } else if (type === 1) {
-                    this.mMapArray[i][j] = typeText;
+                    this.mMapArray[i][j] = {type:typeText, item:new MapItem()};
                 }
             }
         }
@@ -820,10 +863,10 @@ class Main extends egret.DisplayObjectContainer {
 
         for (var i = 0; i < this.mMapRows - 2; ++i) {
             for (var j = 0; j < this.mMapCols - 2; ++j) {
-
-                var type = this.mMapArray[i][j];
+                var itemObj = this.mMapArray[i][j];
+                var type = itemObj.type;
                 if (type != -1) {
-                    var item:MapItem = new MapItem();
+                    var item:MapItem = itemObj.item;
                     this.addChild(item);
                     item.x = x;
                     item.y = y;
