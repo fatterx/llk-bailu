@@ -753,6 +753,8 @@ class Main extends egret.DisplayObjectContainer {
     private doDie():void {
         this.mStartGame = false;
         this.mGameOver = true;
+
+        this.cleanMap();
         this.drawGameOverBg();
         this.showRePlayBtn();
         console.log("{\"action\":\"gameover\",\"score\":\"" + -1 + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
