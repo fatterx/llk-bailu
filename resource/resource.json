@@ -1,7 +1,7 @@
 {
 "resources":
 	[
-		{"name":"gameBg","type":"image","url":"assets/bg2.jpg"},
+		{"name":"gameBg","type":"image","url":"assets/bg.jpg"},
         {"name":"description","type":"json","url":"config/description.json"}
 	],
 

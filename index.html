@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>HelloWorld</title>
+    <title>学霸学渣连连看</title>
     <meta name="viewport"
           content="width=device-width,initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no,target-densitydpi=device-dpi"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -15,7 +15,7 @@
     <style>
         body {
             text-align: center;
-            background: #000000;
+            background:url("/resource/assets/bg.jpg") no-repeat center;
             padding: 0;
             border: 0;
             margin: 0;
@@ -49,6 +49,18 @@
     else {
         alert("Egret 不支持您当前的浏览器")
     }
+</script>
+<script>
+    var _gaq = _gaq || [];
+
+    _gaq.push(['_setAccount', 'UA-48995178-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
 </script>
 </body>
 </html>
