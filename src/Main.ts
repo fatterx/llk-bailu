@@ -51,6 +51,7 @@ class Main extends egret.DisplayObjectContainer {
         //this.loadingView = new LoadingUI();
         //this.stage.addChild(this.loadingView);
         //初始化Resource资源加载库
+        window["gameBoy"] = this;
         //initiate Resource loading library
         RES.addEventListener(RES.ResourceEvent.CONFIG_COMPLETE, this.onConfigComplete, this);
         RES.loadConfig("resource/resource.json", "resource/");
@@ -110,7 +111,7 @@ class Main extends egret.DisplayObjectContainer {
 
     private mTxtProgress:egret.TextField = new egret.TextField();
     private DEFAULT_PROGRESS:number = 120;
-    private mProgress:number;
+    private mProgress:number = this.DEFAULT_PROGRESS;
 
     private initProgress() {
         this.mTxtProgress.width = 150;
@@ -119,11 +120,13 @@ class Main extends egret.DisplayObjectContainer {
         this.mTxtProgress.y = 600;
         this.mTxtProgress.textColor = 0xffffff;
         this.mTxtProgress.size = 18;
+        this.mTxtProgress.stroke = 2;
+        this.mTxtProgress.strokeColor = 0xf06c60;
         this.mTxtProgress.text = "计时开始";
         this.mTxtProgress.fontFamily = "微软雅黑";
         this.mTxtProgress.bold = true;
         this.addChild(this.mTxtProgress);
-        this.resumeProgress();
+        //this.resumeProgress();
     }
 
     private resumeProgress() {
@@ -143,6 +146,8 @@ class Main extends egret.DisplayObjectContainer {
         this.mTxtLevel.size = 18;
         this.mTxtLevel.text = "level:1";
         this.mTxtLevel.fontFamily = "微软雅黑";
+        this.mTxtLevel.stroke = 2;
+        this.mTxtLevel.strokeColor = 0xf06c60;
         this.mTxtLevel.bold = true;
         this.addChild(this.mTxtLevel);
         this.resumeLevel();
@@ -153,7 +158,8 @@ class Main extends egret.DisplayObjectContainer {
         this.mItemCount = isNaN(this.mItemCount) ? this.mMaxItemCount - 3 : this.mItemCount;
 
         this.mLevel = parseInt(this.getCookie("level"));
-        this.mTxtLevel.text = "level:" + (isNaN(this.mLevel) ? 1 : this.mLevel);
+        this.mLevel = isNaN(this.mLevel) ? 1 : this.mLevel;
+        this.mTxtLevel.text = "level:" + this.mLevel;
 
         this.mGameDifficulty = parseInt(this.getCookie("difficulty"));
         this.mGameDifficulty = isNaN(this.mGameDifficulty) ? 1 : this.mGameDifficulty;
@@ -208,8 +214,8 @@ class Main extends egret.DisplayObjectContainer {
         var stageW:number = this.stage.stageWidth;
         var stageH:number = this.stage.stageHeight;
 
-       // var sky:egret.Bitmap = this.createBitmapByName("gameBg");
-       // this.addChild(sky);
+        // var sky:egret.Bitmap = this.createBitmapByName("gameBg");
+        // this.addChild(sky);
 
         //根据name关键字，异步获取一个json配置文件，name属性请参考resources/resource.json配置文件的内容。
         // Get asynchronously a json configuration file according to name keyword. As for the property of name please refer to the configuration file of resources/resource.json.
@@ -297,7 +303,6 @@ class Main extends egret.DisplayObjectContainer {
     }
 
     private drawMap():void {
-        console.log("drawMap")
         var x = 0, y = 0;
         var maxWidth = (this.mMapCols - 1) * this.mItemWidth;
         var maxHeight = (this.mMapRows - 1) * this.mItemHeight;
@@ -468,15 +473,15 @@ class Main extends egret.DisplayObjectContainer {
         }
     }
 
-    private cleanMap(){
-        if(!this.mMapArray || this.mMapArray.length <= 0){
+    private cleanMap() {
+        if (!this.mMapArray || this.mMapArray.length <= 0) {
             return;
         }
 
         for (var i = 0, rows = this.mMapArray.length; i < rows; ++i) {
             for (var j = 0, cols = this.mMapArray[0].length; j < cols; ++j) {
                 var itemObj = this.mMapArray[i][j];
-                if(itemObj){
+                if (itemObj) {
                     var type = itemObj.type;
                     if (type != -1) {
                         //console.log(itemObj);
@@ -488,16 +493,16 @@ class Main extends egret.DisplayObjectContainer {
     }
 
     private cleanItem(itemObj) {
-        if(!itemObj){
+        if (!itemObj) {
             return;
         }
 
         itemObj.type = -1;
         try {
-            if(itemObj.item){
+            if (itemObj.item) {
                 this.removeChild(itemObj.item);
             }
-        } catch (e){
+        } catch (e) {
             console.error(e);
         }
     }
@@ -749,13 +754,14 @@ class Main extends egret.DisplayObjectContainer {
         this.mStartGame = false;
         this.mGameOver = true;
         this.drawGameOverBg();
-        console.log("{\"action\":\"gameover\",\"score\":\"" + (this.mStartTime - this.mProgress) + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
+        this.showRePlayBtn();
+        console.log("{\"action\":\"gameover\",\"score\":\"" + -1 + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
 
         var thiz = this;
         var idTimeout:number = egret.setTimeout(function (arg) {
             alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
-            thiz.cleanMap();
-            thiz.startGame();
+            //thiz.cleanMap();
+            //thiz.startGame();
         }, this, 100);
     }
 
@@ -769,13 +775,14 @@ class Main extends egret.DisplayObjectContainer {
 
         this.cleanMap();
         this.drawGameOverBg();
+        this.showRePlayBtn();
         console.log("{\"action\":\"gameover\",\"score\":\"" + (this.mStartTime - this.mProgress) + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
 
         var thiz = this;
         var idTimeout:number = egret.setTimeout(function (arg) {
-            alert("哟，不错哦! cost:" + (thiz.mStartTime - thiz.mProgress) + "s");
-            thiz.cleanMap();
-            thiz.startGame();
+            //alert("哟，不错哦! cost:" + (thiz.mStartTime - thiz.mProgress) + "s");
+            //thiz.cleanMap();
+            //thiz.startGame();
         }, this, 100);
 
 
@@ -786,6 +793,38 @@ class Main extends egret.DisplayObjectContainer {
             this.mGameDifficulty = 2;
             this.setCookie("difficulty", this.mGameDifficulty);
             alert("进入朝鲜模式");
+        }
+    }
+
+    private mRePlayBtn:egret.TextField;
+
+    private showRePlayBtn() {
+        if (!this.mRePlayBtn) {
+            this.mRePlayBtn = new egret.TextField();
+            this.mRePlayBtn.touchEnabled = true;
+            this.mRePlayBtn.x = 180;
+            this.mRePlayBtn.y = 580;
+            this.mRePlayBtn.width = 180;
+            this.mRePlayBtn.height = 40;
+            this.mRePlayBtn.text = "再来一局";
+            this.mRePlayBtn.bold = true;
+            this.mRePlayBtn.textColor = 0xffffff;
+            this.mRePlayBtn.stroke = 2;
+            this.mRePlayBtn.strokeColor = 0xf06c60;
+            this.mRePlayBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onRePlayBtnClick, this);
+            this.addChild(this.mRePlayBtn);
+        }
+
+        this.mRePlayBtn.visible = true;
+    }
+
+    private onRePlayBtnClick(){
+        this.reStart();
+    }
+
+    private hideRePlayBtn() {
+        if (this.mRePlayBtn) {
+            this.mRePlayBtn.visible = false;
         }
     }
 
@@ -848,9 +887,9 @@ class Main extends egret.DisplayObjectContainer {
             for (var j = 0; j < this.mMapCols - 2; ++j) {
                 var type = this.mMapArray[i][j];
                 if (type === 0) {
-                    this.mMapArray[i][j] = {type:typeBg, item:new MapItem()};
+                    this.mMapArray[i][j] = {type: typeBg, item: new MapItem()};
                 } else if (type === 1) {
-                    this.mMapArray[i][j] = {type:typeText, item:new MapItem()};
+                    this.mMapArray[i][j] = {type: typeText, item: new MapItem()};
                 }
             }
         }
@@ -878,6 +917,15 @@ class Main extends egret.DisplayObjectContainer {
 
             y = y < maxHeight ? y + this.mItemHeight : 60;
         }
+    }
+
+    public reStart() {
+        this.mLastItemObj = null;
+        this.mLastX = 0;
+        this.mLastY = 0;
+        this.hideRePlayBtn();
+        this.cleanMap();
+        this.startGame();
     }
 
     private mNiu = [
