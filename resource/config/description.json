@@ -1,42 +1,1 @@
-[
-  {
-    "text": "学渣",
-    "textColor": "0xBDC3C7"
-  },
-  {
-    "text": "老师",
-    "textColor": "0xB22222"
-  },
-  {
-    "text": "屌丝",
-    "textColor": "0x363636"
-  },
-  {
-    "text": "汉子",
-    "textColor": "0x583691"
-  },
-  {
-    "text": "学屌",
-    "textColor": "0x0086B3"
-  },
-  {
-    "text": "学霸",
-    "textColor": "0x4183C4"
-  },
-  {
-    "text": "学神",
-    "textColor": "0xF1C40F"
-  },
-  {
-    "text": "男神",
-    "textColor": "0x3498DB"
-  },
-  {
-    "text": "女神",
-    "textColor": "0xFFC0CB"
-  },
-  {
-    "text": "黄瓜",
-    "textColor": "0x298A08"
-  }
-]
+[  {    "text": "学渣",    "textColor": "0xBDC3C7"  },  {    "text": "老师",    "textColor": "0xB22222"  },  {    "text": "屌丝",    "textColor": "0x363636"  },  {    "text": "汉子",    "textColor": "0x583691"  },  {    "text": "学屌",    "textColor": "0x0086B3"  },  {    "text": "学霸",    "textColor": "0x4183C4"  },  {    "text": "学神",    "textColor": "0xF1C40F"  },  {    "text": "男神",    "textColor": "0x3498DB"  },  {    "text": "女神",    "textColor": "0xFFC0CB"  },  {    "text": "黄瓜",    "textColor": "0x298A08"  }]
