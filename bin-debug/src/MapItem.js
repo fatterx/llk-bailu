@@ -2,13 +2,13 @@ var MapItem = (function (_super) {
     __extends(MapItem, _super);
     function MapItem() {
         _super.call(this);
-        this.mWidth = 59;
-        this.mHeight = 59;
+        this.mWidth = 89;
+        this.mHeight = 89;
         this.mBorderColor = 0xFFC0CB;
         this.mBorderColorSelected = 0xff0000;
         this.mBorderWidth = 1;
         this.mBackgrourdColor = 0xF8F8FF;
-        this.mTextSize = 18;
+        this.mTextSize = 28;
         this.mType = 0;
         this.createView();
     }

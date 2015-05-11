@@ -31,11 +31,12 @@ var Main = (function (_super) {
         this.mMapRows = 10;
         this.mMapCols = 8;
         this.mItemCount = 6;
-        this.mItemWidth = 60;
-        this.mItemHeight = 60;
+        this.mItemWidth = 90;
+        this.mItemHeight = 90;
         this.mGameDifficulty = 1;
         this.mTxtProgress = new egret.TextField();
         this.DEFAULT_PROGRESS = 120;
+        this.mProgress = this.DEFAULT_PROGRESS;
         this.mLevel = 1;
         this.mTxtLevel = new egret.TextField();
         this.mPoints = [];
@@ -176,9 +177,10 @@ var Main = (function (_super) {
     __egretProto__.onAddToStage = function (event) {
         //设置加载进度界面
         //Config to load process interface
-        this.loadingView = new LoadingUI();
-        this.stage.addChild(this.loadingView);
+        //this.loadingView = new LoadingUI();
+        //this.stage.addChild(this.loadingView);
         //初始化Resource资源加载库
+        window["gameBoy"] = this;
         //initiate Resource loading library
         RES.addEventListener(RES.ResourceEvent.CONFIG_COMPLETE, this.onConfigComplete, this);
         RES.loadConfig("resource/resource.json", "resource/");
@@ -200,11 +202,12 @@ var Main = (function (_super) {
      */
     __egretProto__.onResourceLoadComplete = function (event) {
         if (event.groupName == "preload") {
-            this.stage.removeChild(this.loadingView);
+            //this.stage.removeChild(this.loadingView);
             RES.removeEventListener(RES.ResourceEvent.GROUP_COMPLETE, this.onResourceLoadComplete, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_LOAD_ERROR, this.onResourceLoadError, this);
             RES.removeEventListener(RES.ResourceEvent.GROUP_PROGRESS, this.onResourceProgress, this);
             this.createGameScene();
+            console.log("{\"action\":\"loadComplete\"}");
         }
     };
     /**
@@ -229,15 +232,17 @@ var Main = (function (_super) {
     __egretProto__.initProgress = function () {
         this.mTxtProgress.width = 150;
         this.mTxtProgress.height = 20;
-        this.mTxtProgress.x = 360;
-        this.mTxtProgress.y = 600;
+        this.mTxtProgress.x = 500;
+        this.mTxtProgress.y = 880;
         this.mTxtProgress.textColor = 0xffffff;
-        this.mTxtProgress.size = 18;
+        this.mTxtProgress.size = 24;
+        this.mTxtProgress.stroke = 2;
+        this.mTxtProgress.strokeColor = 0xf06c60;
         this.mTxtProgress.text = "计时开始";
         this.mTxtProgress.fontFamily = "微软雅黑";
         this.mTxtProgress.bold = true;
         this.addChild(this.mTxtProgress);
-        this.resumeProgress();
+        //this.resumeProgress();
     };
     __egretProto__.resumeProgress = function () {
         this.mProgress = this.mGameDifficulty == 1 ? this.DEFAULT_PROGRESS : this.DEFAULT_PROGRESS - 5 * this.mLevel;
@@ -246,12 +251,14 @@ var Main = (function (_super) {
     __egretProto__.initLevel = function () {
         this.mTxtLevel.width = 150;
         this.mTxtLevel.height = 20;
-        this.mTxtLevel.x = 360;
-        this.mTxtLevel.y = 580;
+        this.mTxtLevel.x = 500;
+        this.mTxtLevel.y = 840;
         this.mTxtLevel.textColor = 0xffffff;
-        this.mTxtLevel.size = 18;
+        this.mTxtLevel.size = 24;
         this.mTxtLevel.text = "level:1";
         this.mTxtLevel.fontFamily = "微软雅黑";
+        this.mTxtLevel.stroke = 2;
+        this.mTxtLevel.strokeColor = 0xf06c60;
         this.mTxtLevel.bold = true;
         this.addChild(this.mTxtLevel);
         this.resumeLevel();
@@ -260,7 +267,8 @@ var Main = (function (_super) {
         this.mItemCount = parseInt(this.getCookie("itemCount"));
         this.mItemCount = isNaN(this.mItemCount) ? this.mMaxItemCount - 3 : this.mItemCount;
         this.mLevel = parseInt(this.getCookie("level"));
-        this.mTxtLevel.text = "level:" + (isNaN(this.mLevel) ? 1 : this.mLevel);
+        this.mLevel = isNaN(this.mLevel) ? 1 : this.mLevel;
+        this.mTxtLevel.text = "level: " + this.mLevel;
         this.mGameDifficulty = parseInt(this.getCookie("difficulty"));
         this.mGameDifficulty = isNaN(this.mGameDifficulty) ? 1 : this.mGameDifficulty;
     };
@@ -281,7 +289,7 @@ var Main = (function (_super) {
         this.startTimer();
     };
     __egretProto__.onTimerStart = function () {
-        this.mTxtProgress.text = "time:" + --this.mProgress + "s";
+        this.mTxtProgress.text = "time: " + --this.mProgress + "s";
     };
     __egretProto__.onTimerEnd = function () {
         this.doDie();
@@ -302,8 +310,8 @@ var Main = (function (_super) {
     __egretProto__.createGameScene = function () {
         var stageW = this.stage.stageWidth;
         var stageH = this.stage.stageHeight;
-        var sky = this.createBitmapByName("gameBg");
-        this.addChild(sky);
+        // var sky:egret.Bitmap = this.createBitmapByName("gameBg");
+        // this.addChild(sky);
         //根据name关键字，异步获取一个json配置文件，name属性请参考resources/resource.json配置文件的内容。
         // Get asynchronously a json configuration file according to name keyword. As for the property of name please refer to the configuration file of resources/resource.json.
         RES.getResAsync("description", this.onMapItemLoaded, this);
@@ -325,6 +333,7 @@ var Main = (function (_super) {
     __egretProto__.startGame = function () {
         this.mStartGame = true;
         this.mGameOver = false;
+        //this.cleanMap();
         this.resumeProgress();
         this.initTimer();
         this.resumeLevel();
@@ -336,7 +345,7 @@ var Main = (function (_super) {
     };
     __egretProto__.createMap = function () {
         var typeIndex = 0;
-        this.clearMap(); //清空地图
+        this.clearMapArray(); //清空地图
         for (var i = 0; i < this.mMapRows; ++i) {
             this.mMapArray.push([]);
             for (var j = 0; j < this.mMapCols;) {
@@ -364,7 +373,7 @@ var Main = (function (_super) {
         }
         this.mLeftPairs = (this.mMapRows - 2) * (this.mMapCols - 2) / 2;
     };
-    __egretProto__.clearMap = function () {
+    __egretProto__.clearMapArray = function () {
         this.mMapArray = [];
     };
     __egretProto__.drawMap = function () {
@@ -402,7 +411,6 @@ var Main = (function (_super) {
     };
     __egretProto__.onTouchDown = function (event) {
         if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchDown, game over, or not start yet");
             return;
         }
         var xy = this.getItemXY(event.localX, event.localY);
@@ -430,9 +438,8 @@ var Main = (function (_super) {
         }
     };
     __egretProto__.onTouchUp = function (event) {
-        console.log("onTouchUp, mGameOver:" + this.mGameOver + " mStartGame:" + this.mStartGame);
         if (this.mGameOver || !this.mStartGame) {
-            console.log("onTouchUp, game over, or not start yet");
+            //console.log("onTouchUp, game over, or not start yet");
             return;
         }
         var xy = this.getItemXY(event.localX, event.localY);
@@ -502,9 +509,36 @@ var Main = (function (_super) {
             this.mLastItemObj = null;
         }
     };
+    __egretProto__.cleanMap = function () {
+        if (!this.mMapArray || this.mMapArray.length <= 0) {
+            return;
+        }
+        for (var i = 0, rows = this.mMapArray.length; i < rows; ++i) {
+            for (var j = 0, cols = this.mMapArray[0].length; j < cols; ++j) {
+                var itemObj = this.mMapArray[i][j];
+                if (itemObj) {
+                    var type = itemObj.type;
+                    if (type != -1) {
+                        //console.log(itemObj);
+                        this.cleanItem(itemObj);
+                    }
+                }
+            }
+        }
+    };
     __egretProto__.cleanItem = function (itemObj) {
+        if (!itemObj) {
+            return;
+        }
         itemObj.type = -1;
-        this.removeChild(itemObj.item);
+        try {
+            if (itemObj.item) {
+                this.removeChild(itemObj.item);
+            }
+        }
+        catch (e) {
+            console.error(e);
+        }
     };
     __egretProto__.onTouchMove = function (event) {
     };
@@ -709,16 +743,33 @@ var Main = (function (_super) {
     __egretProto__.doDie = function () {
         this.mStartGame = false;
         this.mGameOver = true;
-        alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
+        this.cleanMap();
+        this.drawGameOverBg();
+        this.showRePlayBtn();
+        console.log("{\"action\":\"gameover\",\"score\":\"" + -1 + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
+        var thiz = this;
+        var idTimeout = egret.setTimeout(function (arg) {
+            alert("矮油，少年，貌似你挂了\n还剩" + this.mLeftPairs + "对未消除");
+            //thiz.cleanMap();
+            //thiz.startGame();
+        }, this, 100);
     };
     __egretProto__.doSuccess = function () {
         this.mStartGame = false;
         this.mGameOver = true;
         this.stopTimer();
+        this.cleanMap();
+        this.drawGameOverBg();
+        this.showRePlayBtn();
+        console.log("{\"action\":\"gameover\",\"score\":\"" + (this.mStartTime - this.mProgress) + "\",\"score2\":\"" + this.mLevel + "\",\"gameId\":\"llk\"}");
+        var thiz = this;
+        var idTimeout = egret.setTimeout(function (arg) {
+            //alert("哟，不错哦! cost:" + (thiz.mStartTime - thiz.mProgress) + "s");
+            //thiz.cleanMap();
+            //thiz.startGame();
+        }, this, 100);
         this.mLevel++;
         this.setCookie("level", this.mLevel);
-        this.drawGameOverBg();
-        alert("哟，不错哦! cost:" + (this.mStartTime - this.mProgress) + "s");
         if (this.mItemCount < this.mMaxItemCount) {
             this.mItemCount++;
             this.setCookie("itemCount", this.mItemCount);
@@ -728,7 +779,32 @@ var Main = (function (_super) {
             this.setCookie("difficulty", this.mGameDifficulty);
             alert("进入朝鲜模式");
         }
-        this.startGame();
+    };
+    __egretProto__.showRePlayBtn = function () {
+        if (!this.mRePlayBtn) {
+            this.mRePlayBtn = new egret.TextField();
+            this.mRePlayBtn.touchEnabled = true;
+            this.mRePlayBtn.x = 300;
+            this.mRePlayBtn.y = 860;
+            this.mRePlayBtn.width = 180;
+            this.mRePlayBtn.height = 40;
+            this.mRePlayBtn.text = "再来一局";
+            this.mRePlayBtn.bold = true;
+            this.mRePlayBtn.textColor = 0xffffff;
+            this.mRePlayBtn.stroke = 2;
+            this.mRePlayBtn.strokeColor = 0xf06c60;
+            this.mRePlayBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onRePlayBtnClick, this);
+            this.addChild(this.mRePlayBtn);
+        }
+        this.mRePlayBtn.visible = true;
+    };
+    __egretProto__.onRePlayBtnClick = function () {
+        this.reStart();
+    };
+    __egretProto__.hideRePlayBtn = function () {
+        if (this.mRePlayBtn) {
+            this.mRePlayBtn.visible = false;
+        }
     };
     __egretProto__.setCookie = function (key, value) {
         var date = new Date();
@@ -773,33 +849,42 @@ var Main = (function (_super) {
             for (var j = 0; j < this.mMapCols - 2; ++j) {
                 var type = this.mMapArray[i][j];
                 if (type === 0) {
-                    this.mMapArray[i][j] = typeBg;
+                    this.mMapArray[i][j] = { type: typeBg, item: new MapItem() };
                 }
                 else if (type === 1) {
-                    this.mMapArray[i][j] = typeText;
+                    this.mMapArray[i][j] = { type: typeText, item: new MapItem() };
                 }
             }
         }
     };
     __egretProto__.performDrawBg = function () {
-        var x = 60, y = 60;
+        var x = this.mItemWidth, y = this.mItemHeight;
         var maxWidth = (this.mMapCols - 2) * this.mItemWidth;
         var maxHeight = (this.mMapRows - 2) * this.mItemHeight;
         for (var i = 0; i < this.mMapRows - 2; ++i) {
             for (var j = 0; j < this.mMapCols - 2; ++j) {
-                var type = this.mMapArray[i][j];
+                var itemObj = this.mMapArray[i][j];
+                var type = itemObj.type;
                 if (type != -1) {
-                    var item = new MapItem();
+                    var item = itemObj.item;
                     this.addChild(item);
                     item.x = x;
                     item.y = y;
                     item.setType(type);
                     item.setContent(this.mMapItems[type]);
                 }
-                x = x < maxWidth ? x + this.mItemWidth : 60;
+                x = x < maxWidth ? x + this.mItemWidth : this.mItemWidth;
             }
-            y = y < maxHeight ? y + this.mItemHeight : 60;
+            y = y < maxHeight ? y + this.mItemHeight : this.mItemHeight;
         }
+    };
+    __egretProto__.reStart = function () {
+        this.mLastItemObj = null;
+        this.mLastX = 0;
+        this.mLastY = 0;
+        this.hideRePlayBtn();
+        this.cleanMap();
+        this.startGame();
     };
     return Main;
 })(egret.DisplayObjectContainer);
