@@ -37,8 +37,8 @@ class Main extends egret.DisplayObjectContainer {
     private mMapCols = 8;
     private mItemCount = 6;
 
-    private mItemWidth = 60;
-    private mItemHeight = 60;
+    private mItemWidth = 90;
+    private mItemHeight = 90;
 
     public constructor() {
         super();
@@ -116,10 +116,10 @@ class Main extends egret.DisplayObjectContainer {
     private initProgress() {
         this.mTxtProgress.width = 150;
         this.mTxtProgress.height = 20;
-        this.mTxtProgress.x = 360;
-        this.mTxtProgress.y = 600;
+        this.mTxtProgress.x = 500;
+        this.mTxtProgress.y = 880;
         this.mTxtProgress.textColor = 0xffffff;
-        this.mTxtProgress.size = 18;
+        this.mTxtProgress.size = 24;
         this.mTxtProgress.stroke = 2;
         this.mTxtProgress.strokeColor = 0xf06c60;
         this.mTxtProgress.text = "计时开始";
@@ -140,10 +140,10 @@ class Main extends egret.DisplayObjectContainer {
     private initLevel() {
         this.mTxtLevel.width = 150;
         this.mTxtLevel.height = 20;
-        this.mTxtLevel.x = 360;
-        this.mTxtLevel.y = 580;
+        this.mTxtLevel.x = 500;
+        this.mTxtLevel.y = 840;
         this.mTxtLevel.textColor = 0xffffff;
-        this.mTxtLevel.size = 18;
+        this.mTxtLevel.size = 24;
         this.mTxtLevel.text = "level:1";
         this.mTxtLevel.fontFamily = "微软雅黑";
         this.mTxtLevel.stroke = 2;
@@ -159,7 +159,7 @@ class Main extends egret.DisplayObjectContainer {
 
         this.mLevel = parseInt(this.getCookie("level"));
         this.mLevel = isNaN(this.mLevel) ? 1 : this.mLevel;
-        this.mTxtLevel.text = "level:" + this.mLevel;
+        this.mTxtLevel.text = "level: " + this.mLevel;
 
         this.mGameDifficulty = parseInt(this.getCookie("difficulty"));
         this.mGameDifficulty = isNaN(this.mGameDifficulty) ? 1 : this.mGameDifficulty;
@@ -187,7 +187,7 @@ class Main extends egret.DisplayObjectContainer {
 
 
     private onTimerStart() {
-        this.mTxtProgress.text = "time:" + --this.mProgress + "s";
+        this.mTxtProgress.text = "time: " + --this.mProgress + "s";
     }
 
     private onTimerEnd() {
@@ -771,9 +771,6 @@ class Main extends egret.DisplayObjectContainer {
         this.mStartGame = false;
         this.mGameOver = true;
         this.stopTimer();
-        this.mLevel++;
-
-        this.setCookie("level", this.mLevel);
 
         this.cleanMap();
         this.drawGameOverBg();
@@ -787,6 +784,8 @@ class Main extends egret.DisplayObjectContainer {
             //thiz.startGame();
         }, this, 100);
 
+        this.mLevel++;
+        this.setCookie("level", this.mLevel);
 
         if (this.mItemCount < this.mMaxItemCount) {
             this.mItemCount++;
@@ -804,8 +803,8 @@ class Main extends egret.DisplayObjectContainer {
         if (!this.mRePlayBtn) {
             this.mRePlayBtn = new egret.TextField();
             this.mRePlayBtn.touchEnabled = true;
-            this.mRePlayBtn.x = 180;
-            this.mRePlayBtn.y = 580;
+            this.mRePlayBtn.x = 300;
+            this.mRePlayBtn.y = 860;
             this.mRePlayBtn.width = 180;
             this.mRePlayBtn.height = 40;
             this.mRePlayBtn.text = "再来一局";
@@ -898,7 +897,7 @@ class Main extends egret.DisplayObjectContainer {
     }
 
     private performDrawBg() {
-        var x = 60, y = 60;
+        var x = this.mItemWidth, y = this.mItemHeight;
         var maxWidth = (this.mMapCols - 2) * this.mItemWidth;
         var maxHeight = (this.mMapRows - 2) * this.mItemHeight;
 
@@ -914,10 +913,10 @@ class Main extends egret.DisplayObjectContainer {
                     item.setType(type);
                     item.setContent(this.mMapItems[type]);
                 }
-                x = x < maxWidth ? x + this.mItemWidth : 60;
+                x = x < maxWidth ? x + this.mItemWidth : this.mItemWidth;
             }
 
-            y = y < maxHeight ? y + this.mItemHeight : 60;
+            y = y < maxHeight ? y + this.mItemHeight : this.mItemHeight;
         }
     }
 

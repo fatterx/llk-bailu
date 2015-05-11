@@ -1,11 +1,11 @@
 class MapItem extends egret.Sprite {
-	private mWidth: number = 59;
-	private mHeight: number = 59;
+	private mWidth: number = 89;
+	private mHeight: number = 89;
 	private mBorderColor: number = 0xFFC0CB;
 	private mBorderColorSelected: number = 0xff0000;
 	private mBorderWidth: number = 1;
 	private mBackgrourdColor: number = 0xF8F8FF;
-	private mTextSize: number = 18;
+	private mTextSize: number = 28;
 	
 	private mType : number = 0;
 
